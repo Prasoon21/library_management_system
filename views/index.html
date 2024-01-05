@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management</title>
+</head>
+<body>
+    <div id="main" class="container">
+        <h1>Library Management System</h1>
+
+        <label for="bname">Book Name: </label>
+        <input type="text" name="bname" id="bname" placeholder="Please Enter Book Name">
+        <button type="submit" onclick="issueBook()">Submit</button>
+    </div>
+
+    <div id="booksData">
+        <ul id="books"></ul>
+    </div>
+    
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <script>
+        async function issueBook(event){
+            try{
+                event.preventDefault();
+
+                const bookName = document.getElementById('bname').value;
+
+                console.log(bookName);
+
+                const library = {
+                    bookName: bookName
+                };
+
+                console.log(library);
+
+                const res = await axios.post('http://localhost:3000/library', library);
+                console.log(res.data);
+                showDataOnScreen(res.data);
+
+                document.getElementById('bname').value = '';
+            } catch(error){
+                document.body.innerHTML=document.body.innerHTML+'<h4>Something Went Wrong</h4>';
+                console.log(error);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            try{
+                const res = await axios.get('http://localhost:3000/library');
+
+                console.log(res.data);
+
+                for(let i=0;i<res.data.length;i++){
+                    showDataOnScreen(res.data[i]);
+                    console.log('reached', res.data[i]);
+                }
+            } catch (error){
+                document.body.innerHTML=document.body.innerHTML+'<h4>Something Went Wrong</h4>';
+                console.log(error);
+            }
+        })
+
+        function showDataOnScreen(book){
+            let parentNode = document.getElementById('books');
+
+            const childNode = `<li id=${book.id}-${book.bookName}
+                                <button onclick=returnBook('${book.id}')>Return Book</button>`;
+            
+            parentNode.innerHTML = parentNode.innerHTML + childNode;
+        }
+    </script>
+</body>
+</html>
