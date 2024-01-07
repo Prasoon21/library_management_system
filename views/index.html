@@ -4,42 +4,102 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Library Management</title>
+    <style>
+        .bookContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+
+        .bookSection {
+            border: 1px solid #1f1c1c;
+            margin: 10px;
+            padding: 10px;
+            background-color: antiquewhite;
+        }
+
+        .bookInformation {
+            padding: 10px;
+            border-right: 1px solid #ccc;
+        }
+
+        /* .bookInformation:last-child {
+            border-right:none;
+        } */
+
+        #bookInfo, #returnedBooks {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        #returnedBooks {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #ccc;
+        }
+
+        .fineAmount {
+            margin-top: 10px;
+        }
+
+        #payFineButton {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <div id="main" class="container">
-        <h1>Library Management System</h1>
+    <h1>Library Management System</h1>
 
+    <div id="bookForm">
         <label for="bname">Book Name: </label>
         <input type="text" name="bname" id="bname" placeholder="Please Enter Book Name">
-        <button type="submit" onclick="issueBook()">Submit</button>
+        <button type="submit" onclick="issueBook(event)">Submit</button>
     </div>
 
-    <div id="booksData">
-        <ul id="books"></ul>
+    <div id="bookInfo">
+        <h2>Borrowed Books</h2>
+        <div id="borrowedBooks" class="bookContainer"></div>
+    </div>
+
+    <div id="payFine">
+        <p>Current Fine: <span id="totalFineAmount">0</span> Rupees</p>
+        <button id="payFineButton" onclick="payFine()">Pay Fine</button>
+        <p id="paymentMessage"></p>
+    </div>
+
+    <div id="returnedBooks">
+        <h2>Returned Books</h2>
+        <div id="returnedBooksContainer" class="bookContainer"></div>
     </div>
     
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
     <script>
+        let borrowedBooks = [];
+        let returnedBooks = [];
+        let totalFineAmount = 0;
+
         async function issueBook(event){
             try{
                 event.preventDefault();
 
                 const bookName = document.getElementById('bname').value;
 
+                const serverResponse = await axios.post('http://localhost:3000/library', {title: bookName});
+            
+
                 console.log(bookName);
 
-                const library = {
-                    bookName: bookName
+                const newBook = {
+                    title: serverResponse.data.title,
+                    borrowedAt: new Date(),
+                    returnBy: new Date(Date.now() + 60 * 60 * 1000),
+                    fineAmount: 0
                 };
 
-                console.log(library);
-
-                const res = await axios.post('http://localhost:3000/library', library);
-                console.log(res.data);
-                showDataOnScreen(res.data);
-
+                borrowedBooks.push(newBook);
+                showDataOnScreen();
                 document.getElementById('bname').value = '';
             } catch(error){
                 document.body.innerHTML=document.body.innerHTML+'<h4>Something Went Wrong</h4>';
@@ -53,24 +113,125 @@
 
                 console.log(res.data);
 
-                for(let i=0;i<res.data.length;i++){
-                    showDataOnScreen(res.data[i]);
-                    console.log('reached', res.data[i]);
-                }
+                borrowedBooks = res.data;
+
+                showDataOnScreen();
+                // for(let i=0;i<res.data.length;i++){
+                //     showDataOnScreen(res.data[i]);
+                //     console.log('reached', res.data[i]);
+                // }
+                
             } catch (error){
                 document.body.innerHTML=document.body.innerHTML+'<h4>Something Went Wrong</h4>';
                 console.log(error);
             }
         })
 
-        function showDataOnScreen(book){
-            let parentNode = document.getElementById('books');
+        function showDataOnScreen(){
+            // const bookInfoDiv = document.getElementById('bookInfo');
+            // bookInfoDiv.innerHTML = '';
+            const borrowedBooksContainer = document.getElementById('borrowedBooks');
+            const returnedBooksContainer = document.getElementById('returnedBooksContainer');
+            //let sectionCounter = 1;
 
-            const childNode = `<li id=${book.id}-${book.bookName}
-                                <button onclick=returnBook('${book.id}')>Return Book</button>`;
+            borrowedBooksContainer.innerHTML = '';
+            returnedBooksContainer.innerHTML = '';
+
+            for(let i=0;i<borrowedBooks.length;i++){
+                // if(i%3 == 0) {
+                //     const bookSection = document.createElement('div');
+                //     bookSection.classList.add('bookSection');
+                //     bookInfoDiv.appendChild(bookSection);
+                //     sectionCounter++;
+                // }
+                const book = borrowedBooks[i];
+                const bookSection = createBookSection(book);
+                // const bookInformation = document.createElement('div');
+                //bookInformation.classList.add('bookInformation');
+                // bookInformation.innerHTML = `<p>${book.title}</p>
+                //                         <p>Borrowed At: ${book.borrowedAt}</p>
+                //                         <p>Return By: ${book.returnBy}</p>
+                //                         <p class="fineAmount">Fine Amount: ${book.fineAmount} Rupees</p>
+                //                         <button onclick="returnBook(${i})">Return Book</button>`;
+                
+                // const currentSection = document.querySelector('.bookSection:last-child');
+                // currentSection.appendChild(bookInformation);
+                // bookInfoDiv.appendChild(bookInformation);
+                borrowedBooksContainer.appendChild(bookSection);
+            }
+
+            for (let i=0; i<returnedBooks.length; i++) {
+                const returnedBook = returnedBooks[i];
+                const returnedBookSection = createBookSection(returnedBook);
+                returnedBooksContainer.appendChild(returnedBookSection);
+            }
             
-            parentNode.innerHTML = parentNode.innerHTML + childNode;
+
+            calculateFine();
         }
+
+        function createBookSection(book) {
+            const bookSection = document.createElement('div');
+            bookSection.classList.add('bookSection');
+
+            const bookInformation = document.createElement('div');
+            bookInformation.classList.add('bookInformation');
+            bookInformation.innerHTML = `<p>Book Name: ${book.title}</p>
+                                      <p>Borrowed At: ${book.borrowedAt}</p>
+                                       <p>Return By: ${book.returnBy}</p>
+                                         <p class="fineAmount">Fine Amount: ${book.fineAmount} Rupees</p>
+                                        <button onclick="returnBook(${borrowedBooks.indexOf(book)})">Return Book</button>`;
+
+            bookSection.appendChild(bookInformation);
+            return bookSection;
+        }
+
+        function calculateFine() {
+            totalFineAmount = borrowedBooks.reduce((total, book) => total + book.fineAmount, 0);
+            document.getElementById('totalFineAmount').textContent = totalFineAmount;
+
+            const payFineButton = document.getElementById('payFineButton');
+            payFineButton.style.display = totalFineAmount > 0 ? 'block' : 'none';
+            // const fineAmount = document.getElementById('fineAmount');
+            // let fine = 0;
+
+            // borrowedBooks.forEach(book => {
+            //     const now = new Date();
+            //     if(now > book.returnBy) {
+            //         const hoursLate = Math.floor((now - book.returnBy) / (60*60*1000));
+            //         fine += hoursLate * 10;
+            //     }
+            // });
+
+            // fineAmount.textContent = fine;
+        }
+
+        async function returnBook(index) {
+            const returnedBook = borrowedBooks.splice(index, 1)[0];
+            returnedBooks.push(returnedBook);
+
+            const bookInfoDiv = document.getElementById('bookInfo');
+            const returnBooksDiv = document.getElementById('returnedBooks');
+
+            const returnedBookInfo = document.createElement('div');
+            returnedBookInfo.innerHTML = `<p>Returned Book: ${returnedBook.title}, Returned At: ${new Date()}</p>
+                                            <p>Fine Amount: ${returnedBook.fineAmount} Rupees</p>`;
+
+            returnBooksDiv.appendChild(returnedBookInfo);
+            showDataOnScreen()
+        }
+
+        async function payFine() {
+            await axios.post('http://localhost:3000/library', returnedBooks);
+
+            returnedBooks = [];
+            showDataOnScreen();
+
+            const paymentMessage = document.getElementById('paymentMessage');
+            paymentMessage.textContent = 'Paid successfully!';
+        }
+
+
     </script>
 </body>
 </html>

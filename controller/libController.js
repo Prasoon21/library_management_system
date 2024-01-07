@@ -1,6 +1,7 @@
 const Sequelize = require('sequelize');
 const Library = require('../models/libSequelize');
 
+let borrowedBooks = [];
 exports.getBook = async(req, res, next) => {
     try{
         const data = await Library.findAll();
@@ -13,27 +14,49 @@ exports.getBook = async(req, res, next) => {
 };
 
 exports.addBook = async (req, res, next) => {
+    const { title } = req.body;
     console.log("Received POST request for adding book:", req.body);
-    if(!req.body.bookName){
+    if(!title){
         console.log('missing req fields');
-        return res.sendStatus(500)
+        return res.sendStatus(500);
     }
 
     try{
-        const bookName = req.body;
+        
+        // const bookName = req.body;
 
-        console.log(bookName);
+        //console.log(bookName);
 
-        const data = await Library.create({
-            bookName: bookName
+        const borrowedBook = await Library.create({
+            title: title,
+            borrowedAt: new Date().toLocaleString(),
+            returnBy: new Date(Date.now() + 60 * 60 * 1000).toLocaleString(),
+            fineAmount: 0
         });
 
+        //borrowedBooks.push(borrowedBook)
         console.log('updated success');
 
-        res.status(201).json(data)
+        res.status(201).json(borrowedBook)
     } catch (error) {
         console.log(error, JSON.stringify(error))
 
         res.status(501).json({error})
     }
 }
+
+exports.payFine = async(req, res, next) => {
+    try{
+        for (const book of borrowedBooks) {
+            await Library.update({ fineAmount: book.fineAmount }, {where: { id: book.id } });
+
+        }
+        borrowedBooks = [];
+
+        return res.status(200).json({ success: true, message: 'Fine paid successfully'});
+
+    } catch (error){
+        console.error('Error paying fine: ', error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
