@@ -137,98 +137,92 @@
             borrowedBooksContainer.innerHTML = '';
             returnedBooksContainer.innerHTML = '';
 
-            for(let i=0;i<borrowedBooks.length;i++){
-                // if(i%3 == 0) {
-                //     const bookSection = document.createElement('div');
-                //     bookSection.classList.add('bookSection');
-                //     bookInfoDiv.appendChild(bookSection);
-                //     sectionCounter++;
-                // }
-                const book = borrowedBooks[i];
-                const bookSection = createBookSection(book);
-                // const bookInformation = document.createElement('div');
-                //bookInformation.classList.add('bookInformation');
-                // bookInformation.innerHTML = `<p>${book.title}</p>
-                //                         <p>Borrowed At: ${book.borrowedAt}</p>
-                //                         <p>Return By: ${book.returnBy}</p>
-                //                         <p class="fineAmount">Fine Amount: ${book.fineAmount} Rupees</p>
-                //                         <button onclick="returnBook(${i})">Return Book</button>`;
-                
-                // const currentSection = document.querySelector('.bookSection:last-child');
-                // currentSection.appendChild(bookInformation);
-                // bookInfoDiv.appendChild(bookInformation);
+            borrowedBooks.forEach(book => {
+                const bookSection = createBookSection(book, false);
                 borrowedBooksContainer.appendChild(bookSection);
-            }
+            });
 
-            for (let i=0; i<returnedBooks.length; i++) {
-                const returnedBook = returnedBooks[i];
-                const returnedBookSection = createBookSection(returnedBook);
-                returnedBooksContainer.appendChild(returnedBookSection);
-            }
+            returnedBooks.forEach(book => {
+                const bookSection = createBookSection(book, true);
+                returnedBooksContainer.appendChild(bookSection);
+            });
             
 
             calculateFine();
         }
 
-        function createBookSection(book) {
+        function createBookSection(book, isReturned) {
             const bookSection = document.createElement('div');
             bookSection.classList.add('bookSection');
 
             const bookInformation = document.createElement('div');
             bookInformation.classList.add('bookInformation');
             bookInformation.innerHTML = `<p>Book Name: ${book.title}</p>
-                                      <p>Borrowed At: ${book.borrowedAt}</p>
-                                       <p>Return By: ${book.returnBy}</p>
-                                         <p class="fineAmount">Fine Amount: ${book.fineAmount} Rupees</p>
-                                        <button onclick="returnBook(${borrowedBooks.indexOf(book)})">Return Book</button>`;
+                                            <p>Borrowed At: ${book.borrowedAt}</p>
+                                            <p>Return By: ${book.returnBy}</p>
+                                            ${isReturned ? `<p>'Returned At' : ${book.returnedAt}` : ''}
+                                            <p class="fineAmount">Fine Amount: ${book.fineAmount} Rupees</p>
+                                            <button onclick="returnBook(${borrowedBooks.indexOf(book)})">Return Book</button>`;
+
 
             bookSection.appendChild(bookInformation);
+
             return bookSection;
         }
 
         function calculateFine() {
+            // const now = new Date();
+            // if(now > book.returnBy) {
+            //     const hoursLate = Math.floor((now - book.returnBy) / (60 *60 * 1000));
+            //     return hoursLate * 10;
+            // }
+            // return 0;
+
             totalFineAmount = borrowedBooks.reduce((total, book) => total + book.fineAmount, 0);
             document.getElementById('totalFineAmount').textContent = totalFineAmount;
 
             const payFineButton = document.getElementById('payFineButton');
             payFineButton.style.display = totalFineAmount > 0 ? 'block' : 'none';
-            // const fineAmount = document.getElementById('fineAmount');
-            // let fine = 0;
-
-            // borrowedBooks.forEach(book => {
-            //     const now = new Date();
-            //     if(now > book.returnBy) {
-            //         const hoursLate = Math.floor((now - book.returnBy) / (60*60*1000));
-            //         fine += hoursLate * 10;
-            //     }
-            // });
-
-            // fineAmount.textContent = fine;
         }
 
         async function returnBook(index) {
             const returnedBook = borrowedBooks.splice(index, 1)[0];
+            returnedBook.returnedAt = new Date();
+            returnedBook.fineAmount = calculateFineForBook(returnedBook);
+
+            // const returnedBooksContainer = document.getElementById('returnedBooksContainer');
+            // const returnedBookSection = createBookSection(returnedBook, true);
+
+            // returnedBooksContainer.appendChild(returnedBookSection);
+            // calculateFine();
             returnedBooks.push(returnedBook);
-
-            const bookInfoDiv = document.getElementById('bookInfo');
-            const returnBooksDiv = document.getElementById('returnedBooks');
-
-            const returnedBookInfo = document.createElement('div');
-            returnedBookInfo.innerHTML = `<p>Returned Book: ${returnedBook.title}, Returned At: ${new Date()}</p>
-                                            <p>Fine Amount: ${returnedBook.fineAmount} Rupees</p>`;
-
-            returnBooksDiv.appendChild(returnedBookInfo);
-            showDataOnScreen()
+            showDataOnScreen();
+            calculateFine();
         }
 
         async function payFine() {
-            await axios.post('http://localhost:3000/library', returnedBooks);
+
+            const fineDetails = returnedBooks.map(book => ({
+                id: book.id,
+                fineAmount: book.fineAmount
+            }));
+
+            await axios.post('http://localhost:3000/library', fineDetails);
 
             returnedBooks = [];
             showDataOnScreen();
 
             const paymentMessage = document.getElementById('paymentMessage');
             paymentMessage.textContent = 'Paid successfully!';
+        }
+
+        function calculateFineForBook(book){
+            const now = new Date();
+            if(now > book.returnBy){
+                const hoursLate = Math.floor((now - book.returnBy) / (60 * 60 * 1000));
+                return hoursLate * 10;
+            }
+            return 0;
         }
 
 
