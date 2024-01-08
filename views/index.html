@@ -42,8 +42,12 @@
             margin-top: 10px;
         }
 
-        #payFineButton {
+        .payFineButton {
             display: none;
+        }
+
+        .fineAmountInput {
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -61,11 +65,11 @@
         <div id="borrowedBooks" class="bookContainer"></div>
     </div>
 
-    <div id="payFine">
-        <p>Current Fine: <span id="totalFineAmount">0</span> Rupees</p>
+    <!-- <div id="payFine">
+        <p><span id="totalFineAmount"></span></p>
         <button id="payFineButton" onclick="payFine()">Pay Fine</button>
         <p id="paymentMessage"></p>
-    </div>
+    </div> -->
 
     <div id="returnedBooks">
         <h2>Returned Books</h2>
@@ -113,7 +117,11 @@
 
                 console.log(res.data);
 
-                borrowedBooks = res.data;
+                borrowedBooks = res.data.map(book => ({
+                    ...book,
+                    borrowedAt: new Date(book.borrowedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+                    returnBy: new Date(book.returnBy).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+                }));
 
                 showDataOnScreen();
                 // for(let i=0;i<res.data.length;i++){
@@ -160,10 +168,23 @@
             bookInformation.innerHTML = `<p>Book Name: ${book.title}</p>
                                             <p>Borrowed At: ${book.borrowedAt}</p>
                                             <p>Return By: ${book.returnBy}</p>
-                                            ${isReturned ? `<p>'Returned At' : ${book.returnedAt}` : ''}
+                                            ${isReturned ? `<p>'Returned At' : ${new Date(book.returnedAt).toLocaleString('en-In', { timeZone: 'Asia/Kolkata' })}</p>` : ''}
                                             <p class="fineAmount">Fine Amount: ${book.fineAmount} Rupees</p>
                                             <button onclick="returnBook(${borrowedBooks.indexOf(book)})">Return Book</button>`;
 
+            if (isReturned && book.fineAmount > 0) {
+                const fineAmountField = document.createElement('input');
+                fineAmountField.type = 'number';
+                fineAmountField.placeholder = 'Enter Fine Amount';
+                fineAmountField.classList.add('fineAmountInput');
+                bookInformation.appendChild(fineAmountField);
+
+                const payFineButton = document.createElement('button');
+                payFineButton.textContent = 'Pay Fine';
+                payFineButton.onclick = () => payFine(book);
+                payFineButton.classList.add('payFineButton');
+                bookSection.appendChild(payFineButton);
+            }
 
             bookSection.appendChild(bookInformation);
 
@@ -171,18 +192,51 @@
         }
 
         function calculateFine() {
-            // const now = new Date();
-            // if(now > book.returnBy) {
-            //     const hoursLate = Math.floor((now - book.returnBy) / (60 *60 * 1000));
-            //     return hoursLate * 10;
-            // }
-            // return 0;
+            //totalFineAmount = borrowedBooks.reduce((total, book) => total + book.fineAmount, 0);
+            const payFineButtons = document.querySelector('.payFineButton');
+            payFineButtons.forEach(button => {
+                button.style.display = button.previousSibling.querySelector('.fineAmountInput').value > 0 ? 'block' : 'none';
+                // const fineAmountField = button.previousSibling.querySelector('.fineAmount');
+                // const index = parseInt(button.dataset.index, 10);
+                // const fineAmount = borrowedBooks[index].fineAmount;
+                // if(fineAmount > 0){
+                //     fineAmountField.style.display = 'block';
+                //     button.style.display = 'block';
+                // } else {
+                //     fineAmountField.style.display = 'none';
+                //     button.style.display = 'none';
+                // }
+            });
 
-            totalFineAmount = borrowedBooks.reduce((total, book) => total + book.fineAmount, 0);
-            document.getElementById('totalFineAmount').textContent = totalFineAmount;
+            const totalFineAmount = borrowedBooks.reduce((total, book) => total + book.fineAmount, 0);
+            const payFineSection = document.getElementById('payFine');
 
-            const payFineButton = document.getElementById('payFineButton');
-            payFineButton.style.display = totalFineAmount > 0 ? 'block' : 'none';
+            payFineSection.style.display = totalFineAmount > 0 ? 'block' : 'none';
+        }
+
+        function createReturnedBookSection(book) {
+            const returnedBookSection = document.createElement('div');
+            returnedBookSection.classList.add('bookSection');
+
+            const bookInformation = document.createElement('div');
+            bookInformation.classList.add('bookInformation');
+            bookInformation.innerHTML = `<p>Book Name: ${book.title}</p>
+                                        <p>Fine Amount: ${book.fineAmount} Rupees</p>
+                                        <p>Returned At: ${new Date(book.returnedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>`;
+            
+            returnedBookSection.appendChild(bookInformation);
+
+            return returnedBookSection;
+        }
+
+        function showReturnedBooks() {
+            const returnedBooksContainer = document.getElementById('returnedBooksContainer');
+            returnedBooksContainer.innerHTML = '';
+
+            returnedBooks.forEach(book => {
+                const returnedBookSection = createReturnedBookSection(book);
+                returnedBooksContainer.appendChild(returnedBookSection);
+            });
         }
 
         async function returnBook(index) {
@@ -198,19 +252,32 @@
             returnedBooks.push(returnedBook);
             showDataOnScreen();
             calculateFine();
+            //showReturnedBooks();
         }
 
-        async function payFine() {
+        async function payFine(returnedBook) {
 
-            const fineDetails = returnedBooks.map(book => ({
-                id: book.id,
-                fineAmount: book.fineAmount
-            }));
+            //const fineAmountFieldId = `fineAmount_${returnedBooks.indexOf(returnedBook)}`;
+            const fineAmountField = document.querySelector('.fineAmountInput');
+            if (fineAmountField.value === '' || isNaN(parseFloat(fineAmountField.value))) {
+                alert('Please enter a valid fine amount.');
+                return;
+            }
+            const fineAmount = parseFloat(fineAmountField.value);
 
-            await axios.post('http://localhost:3000/library', fineDetails);
-
-            returnedBooks = [];
+            returnedBook.fineAmount = 0;
             showDataOnScreen();
+            //showReturnedBooks();
+
+            // const fineDetails = returnedBooks.map(book => ({
+            //     id: book.id,
+            //     fineAmount: book.fineAmount
+            // }));
+
+            // await axios.post('http://localhost:3000/library', fineDetails);
+
+            // returnedBooks = [];
+            // showDataOnScreen();
 
             const paymentMessage = document.getElementById('paymentMessage');
             paymentMessage.textContent = 'Paid successfully!';
