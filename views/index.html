@@ -65,11 +65,8 @@
         <div id="borrowedBooks" class="bookContainer"></div>
     </div>
 
-    <!-- <div id="payFine">
-        <p><span id="totalFineAmount"></span></p>
-        <button id="payFineButton" onclick="payFine()">Pay Fine</button>
-        <p id="paymentMessage"></p>
-    </div> -->
+    
+    
 
     <div id="returnedBooks">
         <h2>Returned Books</h2>
@@ -82,7 +79,7 @@
     <script>
         let borrowedBooks = [];
         let returnedBooks = [];
-        let totalFineAmount = 0;
+        //let totalFineAmount = 0;
 
         async function issueBook(event){
             try{
@@ -152,7 +149,7 @@
 
             returnedBooks.forEach(book => {
                 const returnedBookSection = createReturnedBookSection(book);
-                returnedBooksContainer.appendChild(bookSection);
+                returnedBooksContainer.appendChild(returnedBookSection);
             });
             
 
@@ -170,46 +167,54 @@
                                             <p>Return By: ${book.returnBy}</p>
                                             ${isReturned ? `<p>'Returned At' : ${new Date(book.returnedAt).toLocaleString('en-In', { timeZone: 'Asia/Kolkata' })}</p>` : ''}
                                             <p class="fineAmount">Fine Amount: ${book.fineAmount} Rupees</p>
-                                            <input type="number" class="fineAmountInput" placeholder="Enter Fine Amount" style="display: none;">
+                                            <input type="number" class="fineAmountInput" placeholder="Enter Fine Amount" style="display: none;" disabled>
                                     <button class="payFineButton" style="display: none;" onclick="payFine(${borrowedBooks.indexOf(book)})">Pay Fine</button>
                                     <button onclick="returnBook(${borrowedBooks.indexOf(book)})">Return Book</button>`;
                                             
 
             bookSection.appendChild(bookInformation);
 
+            book.element = bookSection;
             book.fineAmountInput = bookInformation.querySelector('.fineAmountInput');
-    book.payFineButton = bookInformation.querySelector('.payFineButton');
+            book.payFineButton = bookInformation.querySelector('.payFineButton');
 
             return bookSection;
         }
 
         function calculateFine() {
             borrowedBooks.forEach(book => {
+                //const fineAmountField = book.element.querySelector('.fineAmount');
                 const fineAmountField = book.fineAmountInput;
                 const payFineButton = book.payFineButton;
 
                 if(fineAmountField && payFineButton){
-                    if(book.fineAmount > 0){
-                        fineAmountField.style.display = 'block';
-                        payFineButton.style.display = 'block';
-                    } else {
-                        fineAmountField.style.display = 'none';
-                        payFineButton.style.display = 'none';
-                    }
+                    fineAmountField.style.display = 'block';
+                    payFineButton.style.display = 'block';
+                    fineAmountField.value = book.fineAmount; // Set the fine amount in the input field
+                    fineAmountField.disabled = true;
+                    // if(book.fineAmount > 0){
+                    //     fineAmountField.style.display = 'block';
+                    //     fineAmountInput.style.display = 'block';
+                    //     payFineButton.style.display = 'block';
+                    // } else {
+                    //     fineAmountField.style.display = 'none';
+                    //     fineAmountInput.style.display = 'none';
+                    //     payFineButton.style.display = 'none';
+                    // }
                 } else{
                     console.error('Fine amount field or pay fine button not found:', book);
 
                 }
             });
 
-            const totalFineAmount = borrowedBooks.reduce((total, book) => total + book.fineAmount, 0);
-            const payFineSection = document.getElementById('payFine');
+            // const totalFineAmount = borrowedBooks.reduce((total, book) => total + book.fineAmount, 0);
+            // const payFineSection = document.getElementById('payFine');
 
-            if(payFineSection){
-                payFineSection.style.display = totalFineAmount > 0 ? 'block' : 'none';
-            } else{
-                console.error('pay fine section not found.');
-            }
+            // if(payFineSection){
+            //     payFineSection.style.display = totalFineAmount > 0 ? 'block' : 'none';
+            // } else{
+            //     console.error('pay fine section not found.');
+            // }
         }
 
         function createReturnedBookSection(book) {
@@ -240,41 +245,68 @@
         async function returnBook(index) {
             const returnedBook = borrowedBooks.splice(index, 1)[0];
             returnedBook.returnedAt = new Date();
+            //const originalFineAmount = returnedBook.fineAmount;
             returnedBook.fineAmount = calculateFineForBook(returnedBook);
 
-            const returnedBooksContainer = document.getElementById('returnedBooksContainer');
-            const returnedBookSection = createReturnedBookSection(returnedBook);
 
-            returnedBooksContainer.appendChild(returnedBookSection);
-            // calculateFine();
             const borrowedBooksContainer = document.getElementById('borrowedBooks');
             borrowedBooksContainer.innerHTML = '';
             borrowedBooks.forEach(book => {
                 const bookSection = createBookSection(book, false);
                 borrowedBooksContainer.appendChild(bookSection);
             });
+
+
+            // if (originalFineAmount > 0) {
+            //     const fineAmountInput = returnedBook.fineAmountInput;
+            //     const payFineButton = returnedBook.payFineButton;
+
+            //     fineAmountInput.style.display = 'block';
+            //     payFineButton.style.display = 'block';
+            //     fineAmountInput.disabled = true;
+            //     fineAmountInput.value = originalFineAmount;
+            // }
+
+            // const returnedBooksContainer = document.getElementById('returnedBooksContainer');
+            // returnedBooksContainer.innerHTML = ''; // Clear the returned books container
+            // returnedBooks.forEach(book => {
+            //     const returnedBookSection = createReturnedBookSection(book);
+            //     returnedBooksContainer.appendChild(returnedBookSection);
+            // });
+
+            
+
             returnedBooks.push(returnedBook);
             showDataOnScreen();
-            calculateFine();
-            //showReturnedBooks();
         }
+
+
+
 
         async function payFine(index) {
 
             //const fineAmountFieldId = `fineAmount_${returnedBooks.indexOf(returnedBook)}`;
-            const fineAmountField = document.querySelector('.fineAmountInput');
-            const fineAmount = parseFloat(fineAmountField.value);
+            const fineAmountInput = borrowedBooks[index].fineAmountInput;
+            const fineAmount = parseFloat(fineAmountInput.value);
 
-            if(fineAmount <= 0 || isNaN(fineAmount)) {
-                alert('Please enter a valid fine amount.')
-                return;
-            }
+            // if(fineAmount <= 0 || isNaN(fineAmount)) {
+            //     alert('Please enter a valid fine amount.')
+            //     return;
+            // }
 
-            borrowedBooks[index].fineAmount = 0;
+            borrowedBooks[index].fineAmount = fineAmount;
+            fineAmountInput.disabled = true;
             showDataOnScreen();
 
-            const paymentMessage = document.getElementById('paymentMessage');
+            const paymentMessage = document.createElement('p');
             paymentMessage.textContent = 'Paid successfully!';
+
+            const bookSection = borrowedBooks[index].element;
+            bookSection.appendChild(paymentMessage);
+
+            setTimeout(() => {
+                bookSection.removeChild(paymentMessage);
+            }, 3000);
         }
 
         function calculateFineForBook(book){
