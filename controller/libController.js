@@ -29,8 +29,8 @@ exports.addBook = async (req, res, next) => {
 
         const borrowedBook = await Library.create({
             title: title,
-            borrowedAt: new Date().toLocaleString(),
-            returnBy: new Date(Date.now() + 60 * 60 * 1000).toLocaleString(),
+            borrowedAt: new Date(),
+            returnBy: new Date(Date.now() + 60 * 60 * 1000),
             fineAmount: 0
         });
 
@@ -60,3 +60,16 @@ exports.payFine = async(req, res, next) => {
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 };
+
+// exports.return = async(req, res, next) => {
+//     const bookId = req.params.id;
+
+//     Library.update({returnedAt: new Date() }, { where: { id: bookId } })
+//         .then(() => {
+//             res.status(200).send('Book marked as returned');
+//         })
+//         .catch((error) => {
+//             console.error('Error marking book as returned:', error);
+//             res.status(500).send('Internal Server Error');
+//         });
+// };
