@@ -22,10 +22,6 @@ exports.addBook = async (req, res, next) => {
     }
 
     try{
-        
-        // const bookName = req.body;
-
-        //console.log(bookName);
 
         const borrowedBook = await Library.create({
             title: title,
@@ -34,7 +30,6 @@ exports.addBook = async (req, res, next) => {
             fineAmount: 0
         });
 
-        //borrowedBooks.push(borrowedBook)
         console.log('updated success');
 
         res.status(201).json(borrowedBook)
@@ -61,15 +56,3 @@ exports.payFine = async(req, res, next) => {
     }
 };
 
-// exports.return = async(req, res, next) => {
-//     const bookId = req.params.id;
-
-//     Library.update({returnedAt: new Date() }, { where: { id: bookId } })
-//         .then(() => {
-//             res.status(200).send('Book marked as returned');
-//         })
-//         .catch((error) => {
-//             console.error('Error marking book as returned:', error);
-//             res.status(500).send('Internal Server Error');
-//         });
-// };
