@@ -41,6 +41,14 @@ window.addEventListener('DOMContentLoaded', async () => {
             returnBy: new Date(book.returnBy),
         }));
 
+        const storedReturnedBooks = JSON.parse(localStorage.getItem('returnedBooks')) || [];
+        returnedBooks = storedReturnedBooks.map(book => ({
+            ...book,
+            returnedAt: new Date(book.returnedAt),
+        }));
+
+        borrowedBooks = borrowedBooks.filter(book => !returnedBooks.find(returnedBook => returnedBook.title === book.title));
+
         showDataOnScreen();
         
         
@@ -67,6 +75,7 @@ function showDataOnScreen(){
         const returnedBookSection = createReturnedBookSection(book);
         returnedBooksContainer.appendChild(returnedBookSection);
     });
+
 }
 
 function createBookSection(book, isReturned) {
@@ -140,8 +149,6 @@ async function returnBook(index) {
         fineAmountInput.type = "number";
         fineAmountInput.className = 'fineAmountInput';
         fineAmountInput.value = fineAmount;
-        
-        
         fineAmountInput.disabled = true;
 
         returnedBookSection.appendChild(fineAmountInput);
@@ -153,6 +160,8 @@ async function returnBook(index) {
         showDataOnScreen();
     }
 
+    localStorage.setItem('returnedBooks', JSON.stringify(returnedBooks));
+
     
 }
 
@@ -162,6 +171,8 @@ async function payFine(index) {
     borrowedBooks.splice(index, 1);
     returnedBooks.push(book);
     showDataOnScreen();
+
+    localStorage.setItem('returnedBooks', JSON.stringify(returnedBooks));
     
 }
 

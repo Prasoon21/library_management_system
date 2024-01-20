@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Library Management</title>
     <style>
+
         .bookContainer {
             display: flex;
             flex-wrap: wrap;
@@ -15,12 +16,16 @@
             border: 1px solid #1f1c1c;
             margin: 10px;
             padding: 10px;
-            background-color: antiquewhite;
+            background-color:#ffc600d4;
+        }
+
+        .bookSection button{
+            background-color: coral;
         }
 
         .bookInformation {
             padding: 10px;
-            border-right: 1px solid #ccc;
+            /* border-right: 1px solid #ccc; */
         }
 
         /* .bookInformation:last-child {
@@ -50,13 +55,13 @@
     </style>
     <script src="/script.js"></script>
 </head>
-<body>
+<body style="background-color: #0d241a85">
     <h1>Library Management System</h1>
 
     <div id="bookForm">
         <label for="bname">Book Name: </label>
         <input type="text" name="bname" id="bname" placeholder="Please Enter Book Name">
-        <button type="submit" onclick="issueBook(event)">Submit</button>
+        <button type="submit" style="background-color: floralwhite;" onclick="issueBook(event)">Submit</button>
     </div>
 
     <div id="bookInfo">
